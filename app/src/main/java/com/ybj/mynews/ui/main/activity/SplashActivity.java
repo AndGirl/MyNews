@@ -8,6 +8,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.ybj.mynews.MainActivity;
 import com.ybj.mynews.R;
 import com.ybj.mynews.base.BaseActivity;
 
@@ -54,7 +55,7 @@ public class SplashActivity extends BaseActivity {
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                //MainActivity.startAction
+                MainActivity.startAction(SplashActivity.this);
             }
 
             @Override
