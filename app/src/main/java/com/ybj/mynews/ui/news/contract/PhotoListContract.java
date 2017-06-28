@@ -13,8 +13,8 @@ import rx.Observable;
  * Created by 杨阳洋 on 2017/5/22.
  */
 
-public interface PhotoListContract {
 
+public interface PhotoListContract {
     interface Model extends BaseModel{
         //请求获取图片
         Observable<List<PhotoGril>> getPhotosListData(int size , int page);

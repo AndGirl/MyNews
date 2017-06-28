@@ -2,6 +2,7 @@ package com.ybj.mynews.base;
 
 /**
  * Created by 杨阳洋 on 2017/5/22.
+ * 基础界面展示
  */
 
 public interface BaseView {

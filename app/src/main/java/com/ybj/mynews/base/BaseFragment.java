@@ -30,28 +30,28 @@ public abstract class BaseFragment<T extends BasePresenter, E extends BaseModel>
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        if(rootView == null) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        if (rootView == null)
             rootView = inflater.inflate(getLayoutResource(), container, false);
+        mRxManager=new RxManager();
+        ButterKnife.bind(this, rootView);
+        mPresenter = TUtil.getT(this, 0);
+        mModel= TUtil.getT(this,1);
+        if(mPresenter!=null){
+            mPresenter.mContext=this.getActivity();
         }
-            mRxManager = new RxManager();
-            ButterKnife.bind(this,rootView);
-            mPresenter = TUtil.getT(this, 0);
-            mModel= TUtil.getT(this,1);
-            if(mPresenter != null) {
-                mPresenter.mContext = this.getActivity();
-            }
-            initPresenter();
-            initView();
-            return rootView;
+        initPresenter();
+        initView();
+        return rootView;
     }
-
     //获取布局文件
     protected abstract int getLayoutResource();
     //简单页面无需mvp就不用管此方法即可,完美兼容各种实际场景的变通
     public abstract void initPresenter();
     //初始化view
     protected abstract void initView();
+
+
     /**
      * 通过Class跳转界面
      **/
@@ -163,11 +163,11 @@ public abstract class BaseFragment<T extends BasePresenter, E extends BaseModel>
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
         ButterKnife.unbind(this);
         if (mPresenter != null)
             mPresenter.onDestroy();
         mRxManager.clear();
+        super.onDestroyView();
     }
 
 }

@@ -44,6 +44,7 @@ public class SplashActivity extends BaseActivity {
         ObjectAnimator objectAnimator2 = ObjectAnimator.ofPropertyValuesHolder(mIvLogo, alpha, scaleX, scaleY);
 
         AnimatorSet animatorSet = new AnimatorSet();
+        //同步动画
         animatorSet.playTogether(objectAnimator1,objectAnimator2);
         animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());//匀速
         animatorSet.setDuration(2000);
@@ -56,6 +57,7 @@ public class SplashActivity extends BaseActivity {
             @Override
             public void onAnimationEnd(Animator animator) {
                 MainActivity.startAction(SplashActivity.this);
+                finish();
             }
 
             @Override

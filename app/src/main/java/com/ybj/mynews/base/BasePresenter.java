@@ -6,7 +6,7 @@ import com.ybj.mynews.baserx.RxManager;
 
 /**
  * Created by 杨阳洋 on 2017/5/14.
- * 作用：用于处理RxJava
+ * 作用：用于处理RxJava,建立Model和View层之间的桥梁
  */
 
 public abstract class BasePresenter<T, E> {

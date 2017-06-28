@@ -18,26 +18,29 @@ import rx.subjects.Subject;
 
 /**
  * Created by 杨阳洋 on 2017/5/14.
- * 作用：用RxJava实现EventBus
+ * 作用：用RxJava和RxAndroid封装RxBus实现EventBus
  */
 
 public class RxBus {
 
     private static RxBus instance;
 
-    public static synchronized RxBus getInstance(){
-
-        if(null == instance) {
+    public static synchronized RxBus getInstance() {
+        if (null == instance) {
             instance = new RxBus();
         }
         return instance;
-
     }
 
-    private RxBus(){}
+    private RxBus() {
+    }
 
+    /**
+     * @SuppressWarnings("rawtypes"):抑制编译器警告,
+     * rawtypes意味着传参的时候也要传递带泛型的参数
+     */
     @SuppressWarnings("rawtypes")
-    private ConcurrentHashMap<Object,List<rx.subjects.Subject>> subjectMapper= new ConcurrentHashMap<Object,List<Subject>>();
+    private ConcurrentHashMap<Object, List<Subject>> subjectMapper = new ConcurrentHashMap<Object, List<Subject>>();
 
     /**
      * 订阅事件源
@@ -46,9 +49,9 @@ public class RxBus {
      * @param mAction1
      * @return
      */
-    public RxBus OnEvent(rx.Observable<?> mObservable, Action1<Object> mAction1){
-        mObservable.observeOn(AndroidSchedulers.mainThread()).subscribe(mAction1,
-                new Action1<Throwable>() {
+    public RxBus OnEvent(Observable<?> mObservable, Action1<Object> mAction1) {
+        mObservable.observeOn(AndroidSchedulers.mainThread())
+                .subscribe(mAction1, new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
                 throwable.printStackTrace();
@@ -59,26 +62,28 @@ public class RxBus {
 
     /**
      * 注册事件源
-     *
+     * Subject：在RxJava中作为观察者和被观察这的一个桥梁
+     * PublishSubject仅会向Observer释放在订阅之后Observable释放的数据。
      * @param tag
      * @return
      */
     @SuppressWarnings({"rawtypes"})
-    public <T>Observable<T> register(@NonNull Object tag){
-
+    public <T> Observable<T> register(@NonNull Object tag) {
         List<Subject> subjectList = subjectMapper.get(tag);
-        if(null == subjectList) {
-            subjectList = new ArrayList<>();
+        if (null == subjectList) {
+            subjectList = new ArrayList<Subject>();
+            subjectMapper.put(tag, subjectList);
         }
-        rx.subjects.Subject<T,T> subject;
+        Subject<T, T> subject;
         subjectList.add(subject = PublishSubject.create());
         LogUtils.logd("register"+tag + "  size:" + subjectList.size());
         return subject;
     }
 
-    public void unregister(@NonNull Object tag){
+    @SuppressWarnings("rawtypes")
+    public void unregister(@NonNull Object tag) {
         List<Subject> subjects = subjectMapper.get(tag);
-        if(null != subjects) {
+        if (null != subjects) {
             subjectMapper.remove(tag);
         }
     }
@@ -112,7 +117,7 @@ public class RxBus {
 
     /**
      * 触发事件
-     *
+     * subject.onNext(content):为观察这提供一个新的观察项目
      * @param content
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -131,5 +136,4 @@ public class RxBus {
     public static boolean isEmpty(Collection<Subject> collection) {
         return null == collection || collection.isEmpty();
     }
-
 }

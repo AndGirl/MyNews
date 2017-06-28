@@ -1,13 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<!--CoordinatorLayout:1、作为顶层布局
+2、调度协调子布局产生动画-->
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <TextView
-        android:gravity="center"
-        android:text="photo"
+    <RelativeLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
-</LinearLayout>
+        <!--标题栏-->
+        <com.ybj.mynews.commonwidget.NormalTitleBar
+            android:id="@+id/ntb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!--refreshHeaderLayout：刷新的样式-->
+        <com.ybj.mynews.baserecycler.IRecyclerView
+            android:id="@+id/irc"
+            android:layout_below="@+id/ntb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:loadMoreEnabled="true"
+            app:refreshEnabled="true"
+            app:refreshHeaderLayout="@layout/layout_irecyclerview_refresh_header"/>
+
+        <!--加载框-->
+        <com.ybj.mynews.commonwidget.LoadingTip
+            android:id="@+id/loadedTip"
+            android:layout_below="@+id/ntb"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </RelativeLayout>
+    <!--CoordinatorLayout自己并不控制View，所有的控制权都在Behavior-->
+    <!--CoordinatorLayout能够用来配合FloatingActionButton浮动button-->
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:src="@drawable/ic_arrow_upward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:backgroundTint="@color/main_color"
+        app:layout_behavior="com.ybj.mynews.widget.ScrollAwareFABBehavior"/>
+
+</android.support.design.widget.CoordinatorLayout>

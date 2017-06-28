@@ -9,8 +9,6 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
 
 import com.flyco.tablayout.CommonTabLayout;
 import com.flyco.tablayout.listener.CustomTabEntity;
@@ -37,40 +35,36 @@ import rx.functions.Action1;
 
 public class MainActivity extends BaseActivity {
 
-    @Bind(R.id.fl_body)
-    FrameLayout mFlBody;
     @Bind(R.id.tab_layout)
-    CommonTabLayout mTabLayout;
-    @Bind(R.id.activity_main)
-    RelativeLayout mActivityMain;
+    CommonTabLayout tabLayout;
 
     private String[] mTitles = {"首页", "美女","视频","关注"};
     private int[] mIconUnselectIds = {
             R.mipmap.ic_home_normal,R.mipmap.ic_girl_normal,R.mipmap.ic_video_normal,R.mipmap.ic_care_normal};
     private int[] mIconSelectIds = {
             R.mipmap.ic_home_selected,R.mipmap.ic_girl_selected, R.mipmap.ic_video_selected,R.mipmap.ic_care_selected};
-
-    /*FlycoTabLayout自带的CustomTabEntity:图标是否被选中以及标题信息*/
+    /*CustomTabEntity:flycotablayout自带的*/
     private ArrayList<CustomTabEntity> mTabEntities = new ArrayList<>();
-    private static int tabLayoutHeight;//顶部标签栏的状态
 
-    /*主内容展示*/
     private NewsMainFragment newsMainFragment;
     private PhotosMainFragment photosMainFragment;
     private VideoMainFragment videoMainFragment;
     private CareMainFragment careMainFragment;
+    private static int tabLayoutHeight;
 
     /**
      * 入口
-     *
      * @param activity
      */
-    public static void startAction(Activity activity) {
+    public static void startAction(Activity activity){
         Intent intent = new Intent(activity, MainActivity.class);
         activity.startActivity(intent);
-        activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+        /*overridePendingTransition():进出场动画*/
+        activity.overridePendingTransition(R.anim.fade_in,
+                R.anim.fade_out);
     }
 
+    /*相对布局保障：底部的状态时刻悬浮，framelayout展示内容*/
     @Override
     public int getLayoutId() {
         return R.layout.activity_main;
@@ -80,53 +74,68 @@ public class MainActivity extends BaseActivity {
     public void initPresenter() {
 
     }
-
     @Override
     public void initView() {
         //此处填上在http://fir.im/注册账号后获得的API_TOKEN以及APP的应用ID
         UpdateKey.API_TOKEN = AppConfig.API_FIRE_TOKEN;
         UpdateKey.APP_ID =AppConfig.APP_FIRE_ID;
-        //下载方式:
-        //UpdateKey.DialogOrNotification=UpdateKey.WITH_DIALOG;通过Dialog来进行下载
-        //UpdateKey.DialogOrNotification=UpdateKey.WITH_NOTIFITION;通过通知栏来进行下载(默认)
+        //如果你想通过Dialog来进行下载，可以如下设置
+//        UpdateKey.DialogOrNotification=UpdateKey.WITH_DIALOG;
         UpdateFunGO.init(this);
         //初始化菜单
         initTab();
     }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        //切换dayNight模式要立即变色的页面
+        //切换daynight模式要立即变色的页面
         ChangeModeController.getInstance().init(this,R.attr.class);
         super.onCreate(savedInstanceState);
-        //初始化fragment
+        //初始化frament
         initFragment(savedInstanceState);
-        mTabLayout.measure(0,0);
-        tabLayoutHeight = mTabLayout.getHeight();//获取初始菜单栏的高度
+        tabLayout.measure(0,0);
+        tabLayoutHeight=tabLayout.getMeasuredHeight();
         //监听菜单显示或隐藏
-        mRxManager.on(AppConstant.MENU_SHOW_HIDE,
-                new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean aBoolean) {
-                        startAnimator(aBoolean);
-                    }
-                });
-    }
+        mRxManager.on(AppConstant.MENU_SHOW_HIDE, new Action1<Boolean>() {
 
+            @Override
+            public void call(Boolean hideOrShow) {
+                startAnimation(hideOrShow);
+            }
+        });
+    }
+    /**
+     * 初始化tab
+     */
+    private void initTab() {
+        for (int i = 0; i < mTitles.length; i++) {
+            mTabEntities.add(new TabEntity(mTitles[i], mIconSelectIds[i], mIconUnselectIds[i]));
+        }
+        /*设置底部标签栏的数据*/
+        tabLayout.setTabData(mTabEntities);
+        //点击监听
+        tabLayout.setOnTabSelectListener(new OnTabSelectListener() {
+            @Override
+            public void onTabSelect(int position) {
+                SwitchTo(position);
+            }
+            @Override
+            public void onTabReselect(int position) {
+            }
+        });
+    }
     /**
      * 初始化碎片
-     * @param savedInstanceState
      */
     private void initFragment(Bundle savedInstanceState) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        int currentTabPositino = 0;
-        if(savedInstanceState != null) {//已经对页面做过修改
+        int currentTabPosition = 0;
+        if (savedInstanceState != null) {//状态值丢失
             newsMainFragment = (NewsMainFragment) getSupportFragmentManager().findFragmentByTag("newsMainFragment");
             photosMainFragment = (PhotosMainFragment) getSupportFragmentManager().findFragmentByTag("photosMainFragment");
             videoMainFragment = (VideoMainFragment) getSupportFragmentManager().findFragmentByTag("videoMainFragment");
             careMainFragment = (CareMainFragment) getSupportFragmentManager().findFragmentByTag("careMainFragment");
-            currentTabPositino = savedInstanceState.getInt(AppConstant.HOME_CURRENT_TAB_POSITION);
-        }else{
+            currentTabPosition = savedInstanceState.getInt(AppConstant.HOME_CURRENT_TAB_POSITION);
+        } else {
             newsMainFragment = new NewsMainFragment();
             photosMainFragment = new PhotosMainFragment();
             videoMainFragment = new VideoMainFragment();
@@ -136,44 +145,21 @@ public class MainActivity extends BaseActivity {
             transaction.add(R.id.fl_body, photosMainFragment, "photosMainFragment");
             transaction.add(R.id.fl_body, videoMainFragment, "videoMainFragment");
             transaction.add(R.id.fl_body, careMainFragment, "careMainFragment");
-
         }
         transaction.commit();
-        SwitchTo(currentTabPositino);
-        mTabLayout.setCurrentTab(currentTabPositino);
-    }
-
-    /**
-     * 初始化tab
-     */
-    public void initTab(){
-        for (int i = 0 ; i < mTitles.length ; i ++){
-            mTabEntities.add(new TabEntity(mTitles[i], mIconSelectIds[i], mIconUnselectIds[i]));
-        }
-        mTabLayout.setTabData(mTabEntities);
-        //设置监听
-        mTabLayout.setOnTabSelectListener(new OnTabSelectListener() {
-            @Override
-            public void onTabSelect(int position) {
-                SwitchTo(position);
-            }
-
-            @Override
-            public void onTabReselect(int position) {
-
-            }
-        });
+        SwitchTo(currentTabPosition);
+        tabLayout.setCurrentTab(currentTabPosition);
     }
 
     /**
      * 切换
-     * @param position
      */
     private void SwitchTo(int position) {
         LogUtils.logd("主页菜单position" + position);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         switch (position) {
-            case 0 ://首页
+            //首页
+            case 0:
                 transaction.hide(photosMainFragment);
                 transaction.hide(videoMainFragment);
                 transaction.hide(careMainFragment);
@@ -209,65 +195,32 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        UpdateFunGO.onResume(this);
-    }
-    @Override
-    protected void onStop() {
-        super.onStop();
-        UpdateFunGO.onStop(this);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        ChangeModeController.onDestory();
-    }
-
     /**
      * 菜单显示隐藏动画
      * @param showOrHide
      */
-    private void startAnimator(boolean showOrHide){
-        //获取布局参数
-        final ViewGroup.LayoutParams layoutParams = mTabLayout.getLayoutParams();
-        ValueAnimator valueAnimator = new ValueAnimator();
+    private void startAnimation(boolean showOrHide){
+        final ViewGroup.LayoutParams layoutParams = tabLayout.getLayoutParams();
+        ValueAnimator valueAnimator;
         ObjectAnimator alpha;
-        if(!showOrHide) {//影藏
-            ValueAnimator.ofInt(tabLayoutHeight,0);
-            alpha = ObjectAnimator.ofFloat(mTabLayout, "alpha", 1, 0);
+        if(!showOrHide){
+            valueAnimator = ValueAnimator.ofInt(tabLayoutHeight, 0);
+            alpha = ObjectAnimator.ofFloat(tabLayout, "alpha", 1, 0);
         }else{
             valueAnimator = ValueAnimator.ofInt(0, tabLayoutHeight);
-            alpha = ObjectAnimator.ofFloat(mTabLayout, "alpha", 0, 1);
+            alpha = ObjectAnimator.ofFloat(tabLayout, "alpha", 0, 1);
         }
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                layoutParams.height = (int) valueAnimator.getAnimatedValue();
-                mTabLayout.setLayoutParams(layoutParams);
+                layoutParams.height= (int) valueAnimator.getAnimatedValue();
+                tabLayout.setLayoutParams(layoutParams);
             }
         });
-        AnimatorSet animatorSet = new AnimatorSet();
+        AnimatorSet animatorSet=new AnimatorSet();
         animatorSet.setDuration(500);
         animatorSet.playTogether(valueAnimator,alpha);
         animatorSet.start();
-    }
-
-    /**
-     * 监听返回键
-     * @param keyCode
-     * @param event
-     * @return
-     */
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if(keyCode == KeyEvent.KEYCODE_BACK) {
-            moveTaskToBack(false);
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
     }
 
     /**
@@ -280,15 +233,49 @@ public class MainActivity extends BaseActivity {
         }
         super.onBackPressed();
     }
+    /**
+     * 监听返回键
+     *
+     * @param keyCode
+     * @param event
+     * @return
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(false);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
+    /*Activity状态改变的时候用来保存状态*/
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         //奔溃前保存位置
         LogUtils.loge("onSaveInstanceState进来了1");
-        if(mTabLayout != null) {
+        if (tabLayout != null) {
             LogUtils.loge("onSaveInstanceState进来了2");
-            outState.putInt(AppConstant.HOME_CURRENT_TAB_POSITION, mTabLayout.getCurrentTab());
+            outState.putInt(AppConstant.HOME_CURRENT_TAB_POSITION, tabLayout.getCurrentTab());
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        UpdateFunGO.onResume(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        UpdateFunGO.onStop(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ChangeModeController.onDestory();
     }
 }

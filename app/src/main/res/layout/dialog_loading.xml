@@ -9,6 +9,7 @@
               android:layout_width="wrap_content"
               android:layout_height="wrap_content">
 
+    <!--indeterminateDrawable:定制动画文件-->
     <ProgressBar
         android:indeterminateDrawable="@drawable/loading_dialog_progressbar"
         android:layout_width="wrap_content"

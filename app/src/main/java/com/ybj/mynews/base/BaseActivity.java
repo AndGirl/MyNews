@@ -10,6 +10,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Window;
 
+import com.umeng.analytics.MobclickAgent;
+import com.ybj.mynews.BuildConfig;
 import com.ybj.mynews.R;
 import com.ybj.mynews.baseapp.AppManager;
 import com.ybj.mynews.baserx.RxManager;
@@ -21,25 +23,41 @@ import com.ybj.mynews.daynightmodeutils.ChangeModeController;
 
 import butterknife.ButterKnife;
 
-public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>extends AppCompatActivity {
+/**
+ * MVP架构(Model(模型层) View(视图层) Presenter(发布层))
+ * View并不直接使用Model，他们之间的通信都是通过Presenter，所有交互都发生在Presenter内部
+ * View层：只负责更新界面;显示数据(Model)并且将用户指令(events)传送到Presenter以便作用于那些数据的一个接口。（通常Activity和Fragment作为View层）
+ * Model层：它负责对数据的存取操作
+ * Presenter层：它会从Model层获得所需要的数据，进行一些适当的处理后交由View层进行显示。
+ *
+ *
+ * @param <T>
+ * @param <E>
+ */
 
+public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>extends AppCompatActivity {
     public T mPresenter;
     public E mModel;
     public Context mContext;
     public RxManager mRxManager;
-    private boolean isConfigChange = false;
+    private boolean isConfigChange=false;
 
+    /**
+     * 在onCreate()的时候进行一些初始化操作
+     * 设置屏幕是否可以改变，
+     * @param savedInstanceState
+     */
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        isConfigChange = false;
-        mRxManager = new RxManager();
+        isConfigChange=false;
+        mRxManager=new RxManager();
         doBeforeSetcontentView();
-
+        /*展示布局*/
         setContentView(getLayoutId());
         ButterKnife.bind(this);
         mContext = this;
+        /*TUtil我也不太清楚这个*/
         mPresenter = TUtil.getT(this, 0);
         mModel=TUtil.getT(this,1);
         if(mPresenter!=null){
@@ -49,20 +67,22 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
         this.initView();
     }
 
-    /*在设置Layout前需要配置的操作*/
+    /**
+     * 设置layout前配置
+     */
     private void doBeforeSetcontentView() {
         //设置昼夜主题
         initTheme();
         // 把actvity放到application栈中管理
         AppManager.getAppManager().addActivity(this);
-        //无标题
+        // 无标题
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        //设置竖屏
+        // 设置竖屏
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        //默认着色状态栏
+        // 默认着色状态栏
         SetStatusBarColor();
-    }
 
+    }
     /*********************子类实现*****************************/
     //获取布局文件
     public abstract int getLayoutId();
@@ -71,11 +91,13 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
     //初始化view
     public abstract void initView();
 
-    /*设置主题*/
+
+    /**
+     * 设置主题
+     */
     private void initTheme() {
         ChangeModeController.setTheme(this, R.style.DayTheme, R.style.NightTheme);
     }
-
     /**
      * 着色状态栏（4.4以上系统有效）
      */
@@ -94,6 +116,7 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
     protected void SetTranslanteBar(){
         StatusBarCompat.translucentStatusBar(this);
     }
+
 
 
     /**
@@ -185,7 +208,6 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
     public void showLongToast(String text) {
         ToastUitl.showLong(text);
     }
-
     /**
      * 带图片的toast
      * @param text
@@ -194,50 +216,46 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
     public void showToastWithImg(String text,int res) {
         ToastUitl.showToastWithImg(text,res);
     }
-
     /**
      * 网络访问错误提醒
      */
-    public void showNetErrorTip(){
+    public void showNetErrorTip() {
         ToastUitl.showToastWithImg(getText(R.string.net_error).toString(),R.drawable.ic_wifi_off);
     }
     public void showNetErrorTip(String error) {
         ToastUitl.showToastWithImg(error,R.drawable.ic_wifi_off);
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //debug版本不统计crash
+        if(!BuildConfig.LOG_DEBUG) {
+            //友盟统计
+            MobclickAgent.onResume(this);
+        }
+    }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        //debug版本不统计crash
-//        if(!BuildConfig.LOG_DEBUG) {
-//            //友盟统计
-//            MobclickAgent.onResume(this);
-//        }
-//    }
-//
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//        //debug版本不统计crash
-//        if(!BuildConfig.LOG_DEBUG) {
-//            //友盟统计
-//            MobclickAgent.onPause(this);
-//        }
-//    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //debug版本不统计crash
+        if(!BuildConfig.LOG_DEBUG) {
+            //友盟统计
+            MobclickAgent.onPause(this);
+        }
+    }
 
-    //设备的配置发生改变
-   @Override
+    @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        isConfigChange = true;
+        isConfigChange=true;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mPresenter != null) {
+        if (mPresenter != null)
             mPresenter.onDestroy();
-        }
         if(mRxManager!=null) {
             mRxManager.clear();
         }
@@ -245,5 +263,6 @@ public abstract class BaseActivity <T extends BasePresenter,E extends BaseModel>
             AppManager.getAppManager().finishActivity(this);
         }
         ButterKnife.unbind(this);
+
     }
 }
